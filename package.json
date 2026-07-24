@@ -1,0 +1,10 @@
+{
+  "name": "le-trainer-srs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline-first multilingual vocabulary trainer with SM-2 spaced repetition",
+  "scripts": {
+    "test": "node test/decks.test.mjs"
+  },
+  "license": "MIT"
+}

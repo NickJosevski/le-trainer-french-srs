@@ -14,8 +14,6 @@ const LS_PREFIX = "leTrainer.v1.";        // + language code
 const LS_ACTIVE = "leTrainer.activeLang";
 const DAY_MS = 86400000;
 const RATING = { AGAIN: 1, HARD: 2, GOOD: 3, EASY: 4 };
-// Latin letters + accents/ligatures shared across supported languages.
-const LETTER = "a-zàâäáãéèêëíìîïóòôöõúùûüçñœæ";
 
 const registry = () => (window.LeTrainer && window.LeTrainer.langs) || {};
 
@@ -224,32 +222,10 @@ function articleHtml(c) {
   return `<span class="article">${escapeHtml(c.article)}${sep}</span>`;
 }
 
-// Locate the target word's surface form in its sentence.
-// Priority: explicit inflection(s) → exact word → stemmed match.
+// Locate the target's surface form via the shared matcher (js/match.js),
+// passing the active pack so its stemmer is used.
 function locateTarget(c) {
-  const sent = c.sentence || "";
-  if (!sent) return null;
-  const forms = [];
-  if (c.inflection) c.inflection.split(/[,|/]/).forEach(f => { f = f.trim(); if (f) forms.push(f); });
-  if (c.word) forms.push(c.word);
-  forms.sort((a, b) => b.length - a.length);
-  for (const f of forms) { const hit = matchForm(sent, f); if (hit) return hit; }
-
-  const pack = Lang.pack();
-  const stem = pack && pack.stem ? pack.stem(c.word) : c.word;
-  if (stem && stem.length >= 3) {
-    const re = new RegExp("(^|[^" + LETTER + "])(" + escapeRegex(stem) + "[" + LETTER + "]*)", "i");
-    const m = re.exec(sent);
-    if (m) { const start = m.index + m[1].length; return { start, end: start + m[2].length }; }
-  }
-  return null;
-}
-function matchForm(sent, form) {
-  if (!form) return null;
-  const re = new RegExp("(^|[^" + LETTER + "])(" + escapeRegex(form) + ")(?![" + LETTER + "])", "i");
-  const m = re.exec(sent);
-  if (m) { const start = m.index + m[1].length; return { start, end: start + m[2].length }; }
-  return null;
+  return window.LeTrainer.match.locateTarget(c, Lang.pack());
 }
 function clozeSentence(c) {
   const hit = locateTarget(c);
@@ -736,7 +712,6 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, m =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
-function escapeRegex(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 function setVal(id, v) { document.getElementById(id).value = v ?? ""; }
 function getVal(id) { return document.getElementById(id).value; }
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }

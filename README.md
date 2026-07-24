@@ -59,11 +59,13 @@ js/
 ├── app.js            language-agnostic engine
 │                     (Lang · Store · SRS · Audio · Review · DeckManager
 │                      · Stats · Settings · Data · Modal · App)
+├── match.js          shared target-word matcher (used by the app AND the test)
 └── lang/
     ├── fr.js         French pack: deck + stemmer + voice + articles + UI
     ├── it.js         Italian pack (same shape)
     ├── es.js         Spanish pack
     └── ja.js         Japanese pack (no gender; CJK-aware matching)
+test/decks.test.mjs   deck integrity check, run in CI before deploy
 ```
 
 ### Adding a language
@@ -74,6 +76,18 @@ provides: `code`, `name`, `flag`, `voiceLang`/`voiceMatch`, `ui` strings,
 `genders` (article/gender options), a `stem(word)` function, and a `deck`
 array. The engine, storage namespacing, and language switcher pick it up
 automatically.
+
+## Testing
+
+```bash
+npm test        # node test/decks.test.mjs
+```
+
+The test loads the real matcher and every language pack exactly as the browser
+does, then asserts every card's target can be located in its example sentence
+(so cloze deletion and highlighting are guaranteed to work). It runs in GitHub
+Actions on every push — **a failing deck blocks the Pages deploy**, so a card
+whose sentence doesn't contain its word can never ship.
 
 ## License
 

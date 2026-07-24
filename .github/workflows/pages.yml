@@ -16,7 +16,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Verify every deck card can be located in its sentence before we ship.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify decks
+        run: node test/decks.test.mjs
+
   deploy:
+    needs: test          # deploy only runs if the deck test passes
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
