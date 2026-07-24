@@ -1,21 +1,25 @@
-# 🇫🇷 Le Trainer — French Vocabulary SRS
+# 🇫🇷🇮🇹 Le Trainer — Vocabulary SRS
 
-A standalone, offline-first web app for learning French vocabulary through
+A standalone, offline-first web app for learning vocabulary through
 **Spaced Repetition (SM-2)**, sentence context, cloze deletion, and native
-speech audio. No backend, no build step — just open `index.html`.
+speech audio. Ships with **French and Italian** decks and switches between them
+in-app. No backend, no build step — just open `index.html`.
 
 ## Features
 
+- **Two languages, one engine** — French 🇫🇷 and Italian 🇮🇹, switchable from the
+  top bar. Each language has its own deck, voice, stemmer, articles, and
+  independent SRS progress. Adding a third is just a new file in `js/lang/`.
 - **SM-2 spaced repetition** — Again / Hard / Good / Easy ratings with live
   next-interval previews; cards flow through New → Learning → Review → Mastered.
-- **French-first cards** — article + gender tag (`le` / `la`, `[m]` / `[f]`),
-  IPA phonetics, part of speech, and CEFR level (A1–C1).
+- **Grammar-aware cards** — article + gender tag (`le` / `la` / `il` / `la`,
+  `[m]` / `[f]`), IPA phonetics, part of speech, and CEFR level (A1–C1).
 - **Cloze deletion** — hides the target word (`[…]`) inside a full example
-  sentence. An explicit *inflected form* field plus a light French stemmer mean
-  conjugated verbs (e.g. *voudrais*, *connais*, *comprends*) clone/highlight
-  correctly, not just exact matches.
-- **Native audio** — `speechSynthesis` locked to `fr-FR`, voice picker, and a
-  0.75× slow-playback mode.
+  sentence. An explicit *inflected form* field plus a light per-language stemmer
+  mean conjugated verbs (e.g. *voudrais*, *connais*, *vorrei*, *capisco*)
+  cloze/highlight correctly, not just exact matches.
+- **Native audio** — `speechSynthesis` set to the active language (`fr-FR` /
+  `it-IT`), voice picker, and a 0.75× slow-playback mode.
 - **Deck manager** — search, filter by level/state, edit, delete; quick-add modal.
 - **Analytics** — reviewed-today, day streak, retention %, memory-breakdown bar,
   and a 20-week activity heatmap.
@@ -38,15 +42,32 @@ cd le-trainer-french-srs
 open index.html   # or just double-click it
 ```
 
-Ships with a curated 30-word starter deck across A1–B1.
+Or play it online: **https://nickjosevski.github.io/le-trainer-french-srs/**
+
+Each language ships with a curated 30-word starter deck across A1–B1.
 
 ## Project structure
 
-| File | Role |
-|------|------|
-| `index.html` | Markup — Review / Deck / Stats / Settings views + add/edit modal |
-| `styles.css` | Dark slate theme, glassmorphism, tricolor accents, responsive |
-| `app.js` | Modular logic: `Store · SRS · Audio · Review · DeckManager · Stats · Settings · Data · Modal · App` |
+```
+index.html            markup — Review / Deck / Stats / Settings + modal
+css/styles.css        dark slate theme, glassmorphism, responsive
+js/
+├── app.js            language-agnostic engine
+│                     (Lang · Store · SRS · Audio · Review · DeckManager
+│                      · Stats · Settings · Data · Modal · App)
+└── lang/
+    ├── fr.js         French pack: deck + stemmer + voice + articles + UI
+    └── it.js         Italian pack (same shape)
+```
+
+### Adding a language
+
+Drop a `js/lang/<code>.js` that registers a pack on
+`window.LeTrainer.langs`, then add one `<script>` tag in `index.html`. A pack
+provides: `code`, `name`, `flag`, `voiceLang`/`voiceMatch`, `ui` strings,
+`genders` (article/gender options), a `stem(word)` function, and a `deck`
+array. The engine, storage namespacing, and language switcher pick it up
+automatically.
 
 ## License
 

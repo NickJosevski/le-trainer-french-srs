@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#0f172a" />
 <title>Le Trainer — French Vocabulary SRS</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
 <div id="app">
@@ -25,6 +25,7 @@
       <button class="tab" data-view="settings" role="tab">Settings</button>
     </nav>
     <div class="topbar-actions">
+      <select id="langSelect" class="input lang-select" aria-label="Language"></select>
       <button id="quickAddBtn" class="btn btn-accent">+ Add</button>
     </div>
   </header>
@@ -44,8 +45,8 @@
 
       <div id="sessionDone" class="session-done hidden">
         <div class="done-icon">🎉</div>
-        <h2>Séance terminée !</h2>
-        <p>No more cards due right now. Great work.</p>
+        <h2 id="doneTitle">Séance terminée !</h2>
+        <p id="doneSub">No more cards due right now. Great work.</p>
         <button class="btn btn-accent" id="studyAgainBtn">Study new cards</button>
       </div>
 
@@ -182,16 +183,7 @@
           <input type="text" id="f_word" class="input" required placeholder="eau" />
         </label>
         <label class="field">Article / gender
-          <select id="f_gender" class="input">
-            <option value="">— none —</option>
-            <option value="le|m">le (m)</option>
-            <option value="la|f">la (f)</option>
-            <option value="l'|m">l' (m)</option>
-            <option value="l'|f">l' (f)</option>
-            <option value="les|p">les (pl)</option>
-            <option value="un|m">un (m)</option>
-            <option value="une|f">une (f)</option>
-          </select>
+          <select id="f_gender" class="input"><!-- populated per language --></select>
         </label>
         <label class="field">Part of speech
           <select id="f_pos" class="input">
@@ -235,6 +227,9 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js"></script>
+<!-- Language packs register onto window.LeTrainer.langs, then the engine boots. -->
+<script src="js/lang/fr.js"></script>
+<script src="js/lang/it.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
