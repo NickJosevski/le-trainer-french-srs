@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0f172a" />
+<title>Le Trainer — French Vocabulary SRS</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app">
+  <!-- ===================== HEADER / NAV ===================== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="flag" aria-hidden="true"><i></i><i></i><i></i></span>
+      <div>
+        <h1>Le&nbsp;Trainer</h1>
+        <p class="tagline">French Vocabulary · Spaced Repetition</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab is-active" data-view="review" role="tab">Review</button>
+      <button class="tab" data-view="decks" role="tab">Deck</button>
+      <button class="tab" data-view="stats" role="tab">Stats</button>
+      <button class="tab" data-view="settings" role="tab">Settings</button>
+    </nav>
+    <div class="topbar-actions">
+      <button id="quickAddBtn" class="btn btn-accent">+ Add</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== REVIEW VIEW ===================== -->
+    <section id="view-review" class="view is-active">
+      <div class="review-stats">
+        <div class="pill pill-new"><span id="cntNew">0</span> New</div>
+        <div class="pill pill-learning"><span id="cntLearning">0</span> Learning</div>
+        <div class="pill pill-review"><span id="cntDue">0</span> Due</div>
+      </div>
+
+      <div id="cardStage" class="card-stage">
+        <!-- flashcard injected here -->
+      </div>
+
+      <div id="sessionDone" class="session-done hidden">
+        <div class="done-icon">🎉</div>
+        <h2>Séance terminée !</h2>
+        <p>No more cards due right now. Great work.</p>
+        <button class="btn btn-accent" id="studyAgainBtn">Study new cards</button>
+      </div>
+
+      <p class="hint">
+        <kbd>Space</kbd> flip · <kbd>1</kbd>–<kbd>4</kbd> rate · <kbd>R</kbd> replay audio
+      </p>
+    </section>
+
+    <!-- ===================== DECK VIEW ===================== -->
+    <section id="view-decks" class="view">
+      <div class="deck-toolbar">
+        <input type="search" id="deckSearch" class="input" placeholder="Search words, meanings…" />
+        <select id="filterLevel" class="input">
+          <option value="">All levels</option>
+          <option>A1</option><option>A2</option><option>B1</option>
+          <option>B2</option><option>C1</option>
+        </select>
+        <select id="filterState" class="input">
+          <option value="">All states</option>
+          <option value="new">New</option>
+          <option value="learning">Learning</option>
+          <option value="review">Review</option>
+          <option value="mastered">Mastered</option>
+        </select>
+        <span class="deck-count" id="deckCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="deck-table">
+          <thead>
+            <tr>
+              <th>Word</th><th>Meaning</th><th>POS</th>
+              <th>Level</th><th>State</th><th>Due</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="deckBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== STATS VIEW ===================== -->
+    <section id="view-stats" class="view">
+      <div class="stat-grid">
+        <div class="stat-card glass">
+          <div class="stat-num" id="statToday">0</div>
+          <div class="stat-label">Reviewed today</div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-num" id="statStreak">0</div>
+          <div class="stat-label">Day streak 🔥</div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-num" id="statRetention">—</div>
+          <div class="stat-label">Retention</div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">Total cards</div>
+        </div>
+      </div>
+
+      <div class="glass panel">
+        <h3>Memory breakdown</h3>
+        <div class="breakdown-bar" id="breakdownBar"></div>
+        <div class="breakdown-legend">
+          <span><i class="dot dot-new"></i>New</span>
+          <span><i class="dot dot-learning"></i>Learning</span>
+          <span><i class="dot dot-review"></i>Review</span>
+          <span><i class="dot dot-mastered"></i>Mastered</span>
+        </div>
+      </div>
+
+      <div class="glass panel">
+        <h3>Activity — last 20 weeks</h3>
+        <div class="heatmap" id="heatmap"></div>
+      </div>
+    </section>
+
+    <!-- ===================== SETTINGS VIEW ===================== -->
+    <section id="view-settings" class="view">
+      <div class="glass panel">
+        <h3>Audio</h3>
+        <label class="row-setting">
+          <span>French voice</span>
+          <select id="voiceSelect" class="input"></select>
+        </label>
+        <label class="row-setting">
+          <span>Slow playback (0.75×)</span>
+          <input type="checkbox" id="slowAudio" />
+        </label>
+        <label class="row-setting">
+          <span>Auto-play audio on card front</span>
+          <input type="checkbox" id="autoPlay" checked />
+        </label>
+        <button class="btn" id="testVoice">🔊 Test voice</button>
+      </div>
+
+      <div class="glass panel">
+        <h3>Study</h3>
+        <label class="row-setting">
+          <span>Cloze deletion mode (hide word in sentence)</span>
+          <input type="checkbox" id="clozeMode" checked />
+        </label>
+        <label class="row-setting">
+          <span>New cards per day</span>
+          <input type="number" id="newPerDay" class="input input-sm" min="0" max="100" value="15" />
+        </label>
+      </div>
+
+      <div class="glass panel">
+        <h3>Data & backup</h3>
+        <div class="btn-row">
+          <button class="btn" id="exportBtn">⬇ Export JSON</button>
+          <button class="btn" id="importBtn">⬆ Import JSON</button>
+          <input type="file" id="importFile" accept="application/json" hidden />
+          <button class="btn btn-danger" id="resetBtn">Reset to starter deck</button>
+        </div>
+        <p class="muted" id="storageInfo"></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ===================== QUICK ADD / EDIT MODAL ===================== -->
+<div id="modal" class="modal-overlay hidden">
+  <div class="modal glass">
+    <div class="modal-head">
+      <h2 id="modalTitle">Add a card</h2>
+      <button class="icon-btn" id="modalClose" aria-label="Close">✕</button>
+    </div>
+    <form id="cardForm" class="modal-body">
+      <input type="hidden" id="f_id" />
+      <div class="field-grid">
+        <label class="field">French word / phrase*
+          <input type="text" id="f_word" class="input" required placeholder="eau" />
+        </label>
+        <label class="field">Article / gender
+          <select id="f_gender" class="input">
+            <option value="">— none —</option>
+            <option value="le|m">le (m)</option>
+            <option value="la|f">la (f)</option>
+            <option value="l'|m">l' (m)</option>
+            <option value="l'|f">l' (f)</option>
+            <option value="les|p">les (pl)</option>
+            <option value="un|m">un (m)</option>
+            <option value="une|f">une (f)</option>
+          </select>
+        </label>
+        <label class="field">Part of speech
+          <select id="f_pos" class="input">
+            <option>Noun</option><option>Verb</option><option>Adjective</option>
+            <option>Adverb</option><option>Phrase</option><option>Preposition</option>
+            <option>Pronoun</option><option>Conjunction</option>
+          </select>
+        </label>
+        <label class="field">CEFR level
+          <select id="f_level" class="input">
+            <option>A1</option><option>A2</option><option>B1</option>
+            <option>B2</option><option>C1</option>
+          </select>
+        </label>
+        <label class="field">IPA phonetics
+          <input type="text" id="f_ipa" class="input" placeholder="/o/" />
+        </label>
+        <label class="field">English meaning*
+          <input type="text" id="f_meaning" class="input" required placeholder="water" />
+        </label>
+      </div>
+      <label class="field">Example sentence (French)*
+        <input type="text" id="f_sentence" class="input" required placeholder="Je bois de l'eau." />
+      </label>
+      <label class="field">Sentence translation (English)
+        <input type="text" id="f_translation" class="input" placeholder="I drink water." />
+      </label>
+      <label class="field">Inflected form(s) in sentence
+        <input type="text" id="f_inflection" class="input" placeholder="e.g. voudrais, voulait — comma-separated (optional)" />
+      </label>
+      <label class="field">Grammar / notes
+        <input type="text" id="f_notes" class="input" placeholder="partitive de l'" />
+      </label>
+      <div class="modal-foot">
+        <button type="button" class="btn" id="cancelForm">Cancel</button>
+        <button type="submit" class="btn btn-accent">Save card</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
