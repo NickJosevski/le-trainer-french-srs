@@ -20,7 +20,7 @@
   // Latin letters + accents/ligatures shared across supported languages.
   // Every non-listed character (incl. all CJK) counts as a word boundary,
   // which is what makes exact matching work for space-free Japanese.
-  const LETTER = "a-zàâäáãéèêëíìîïóòôöõúùûüçñœæ";
+  const LETTER = "a-zàâäáãéèêëíìîïóòôöõúùûüçñœæß";
 
   function escapeRegex(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 

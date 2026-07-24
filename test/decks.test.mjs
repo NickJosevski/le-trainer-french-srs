@@ -19,7 +19,8 @@ globalThis.window = globalThis;
 globalThis.LeTrainer = { langs: {} };
 const SCRIPTS = [
   "js/match.js",
-  "js/lang/fr.js", "js/lang/it.js", "js/lang/es.js", "js/lang/ja.js",
+  "js/lang/fr.js", "js/lang/it.js", "js/lang/es.js",
+  "js/lang/ja.js", "js/lang/de.js", "js/lang/zh.js",
 ];
 for (const rel of SCRIPTS) {
   const code = fs.readFileSync(path.join(ROOT, rel), "utf8");

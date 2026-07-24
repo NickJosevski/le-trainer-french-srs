@@ -1,17 +1,17 @@
-# 🇫🇷🇮🇹🇪🇸🇯🇵 Le Trainer — Vocabulary SRS
+# 🇫🇷🇮🇹🇪🇸🇯🇵🇩🇪🇨🇳 Le Trainer — Vocabulary SRS
 
 A standalone, offline-first web app for learning vocabulary through
 **Spaced Repetition (SM-2)**, sentence context, cloze deletion, and native
-speech audio. Ships with **French, Italian, Spanish, and Japanese** decks and
-switches between them in-app. No backend, no build step — just open
-`index.html`.
+speech audio. Ships with **French, Italian, Spanish, Japanese, German, and
+Mandarin Chinese** decks and switches between them in-app. No backend, no build
+step — just open `index.html`.
 
 ## Features
 
-- **Four languages, one engine** — French 🇫🇷, Italian 🇮🇹, Spanish 🇪🇸, and
-  Japanese 🇯🇵, switchable from the top bar. Each language has its own deck,
-  voice, stemmer, articles, and independent SRS progress. Adding another is just
-  a new file in `js/lang/`.
+- **Six languages, one engine** — French 🇫🇷, Italian 🇮🇹, Spanish 🇪🇸,
+  Japanese 🇯🇵, German 🇩🇪, and Mandarin Chinese 🇨🇳, switchable from the top
+  bar. Each language has its own deck, voice, stemmer, articles, and independent
+  SRS progress. Adding another is just a new file in `js/lang/`.
 - **SM-2 spaced repetition** — Again / Hard / Good / Easy ratings with live
   next-interval previews; cards flow through New → Learning → Review → Mastered.
 - **Grammar-aware cards** — article + gender tag (`le` / `la` / `il` / `la`,
@@ -64,7 +64,9 @@ js/
     ├── fr.js         French pack: deck + stemmer + voice + articles + UI
     ├── it.js         Italian pack (same shape)
     ├── es.js         Spanish pack
-    └── ja.js         Japanese pack (no gender; CJK-aware matching)
+    ├── ja.js         Japanese pack (no gender; CJK-aware matching)
+    ├── de.js         German pack (der/die/das; -en stemmer)
+    └── zh.js         Mandarin pack (no gender/inflection; CJK-aware)
 test/decks.test.mjs   deck integrity check, run in CI before deploy
 ```
 
