@@ -1,25 +1,28 @@
-# 🇫🇷🇮🇹 Le Trainer — Vocabulary SRS
+# 🇫🇷🇮🇹🇪🇸🇯🇵 Le Trainer — Vocabulary SRS
 
 A standalone, offline-first web app for learning vocabulary through
 **Spaced Repetition (SM-2)**, sentence context, cloze deletion, and native
-speech audio. Ships with **French and Italian** decks and switches between them
-in-app. No backend, no build step — just open `index.html`.
+speech audio. Ships with **French, Italian, Spanish, and Japanese** decks and
+switches between them in-app. No backend, no build step — just open
+`index.html`.
 
 ## Features
 
-- **Two languages, one engine** — French 🇫🇷 and Italian 🇮🇹, switchable from the
-  top bar. Each language has its own deck, voice, stemmer, articles, and
-  independent SRS progress. Adding a third is just a new file in `js/lang/`.
+- **Four languages, one engine** — French 🇫🇷, Italian 🇮🇹, Spanish 🇪🇸, and
+  Japanese 🇯🇵, switchable from the top bar. Each language has its own deck,
+  voice, stemmer, articles, and independent SRS progress. Adding another is just
+  a new file in `js/lang/`.
 - **SM-2 spaced repetition** — Again / Hard / Good / Easy ratings with live
   next-interval previews; cards flow through New → Learning → Review → Mastered.
 - **Grammar-aware cards** — article + gender tag (`le` / `la` / `il` / `la`,
   `[m]` / `[f]`), IPA phonetics, part of speech, and CEFR level (A1–C1).
 - **Cloze deletion** — hides the target word (`[…]`) inside a full example
   sentence. An explicit *inflected form* field plus a light per-language stemmer
-  mean conjugated verbs (e.g. *voudrais*, *connais*, *vorrei*, *capisco*)
-  cloze/highlight correctly, not just exact matches.
-- **Native audio** — `speechSynthesis` set to the active language (`fr-FR` /
-  `it-IT`), voice picker, and a 0.75× slow-playback mode.
+  mean conjugated verbs (e.g. *voudrais*, *vorrei*, *quiero*, and Japanese
+  住む→*住んで*) cloze/highlight correctly, not just exact matches. Japanese is
+  matched by CJK substring since it has no spaces.
+- **Native audio** — `speechSynthesis` set to the active language (`fr-FR`,
+  `it-IT`, `es-ES`, `ja-JP`), voice picker, and a 0.75× slow-playback mode.
 - **Deck manager** — search, filter by level/state, edit, delete; quick-add modal.
 - **Analytics** — reviewed-today, day streak, retention %, memory-breakdown bar,
   and a 20-week activity heatmap.
@@ -37,14 +40,15 @@ in-app. No backend, no build step — just open `index.html`.
 ## Getting started
 
 ```bash
-git clone https://github.com/NickJosevski/le-trainer-french-srs.git
-cd le-trainer-french-srs
+git clone https://github.com/NickJosevski/le-trainer-srs.git
+cd le-trainer-srs
 open index.html   # or just double-click it
 ```
 
-Or play it online: **https://nickjosevski.github.io/le-trainer-french-srs/**
+Or play it online: **https://nickjosevski.github.io/le-trainer-srs/**
 
-Each language ships with a curated 30-word starter deck across A1–B1.
+Each language ships with a curated 30-word starter deck across A1–B1 (Japanese
+maps JLPT N5/N4/N3 → A1/A2/B1 so the level filter still applies).
 
 ## Project structure
 
@@ -57,7 +61,9 @@ js/
 │                      · Stats · Settings · Data · Modal · App)
 └── lang/
     ├── fr.js         French pack: deck + stemmer + voice + articles + UI
-    └── it.js         Italian pack (same shape)
+    ├── it.js         Italian pack (same shape)
+    ├── es.js         Spanish pack
+    └── ja.js         Japanese pack (no gender; CJK-aware matching)
 ```
 
 ### Adding a language
