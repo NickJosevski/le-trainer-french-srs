@@ -27,6 +27,13 @@ step — just open `index.html`.
   mean conjugated verbs (e.g. *voudrais*, *vorrei*, *quiero*, and Japanese
   住む→*住んで*) cloze/highlight correctly, not just exact matches. Japanese is
   matched by CJK substring since it has no spaces.
+- **Word mining** — see an interesting word in an example sentence? Tap it to
+  capture a card for it, pre-filled with that sentence as context. If you
+  already have the word, it's added as another example instead. "Save & study
+  now" drops the card into your current session without losing your place.
+- **Multiple examples per card** — a card can hold several example sentences;
+  an "↻ Another example" button cycles through them so you see the word in more
+  than one context.
 - **Native audio** — `speechSynthesis` set to the active language (`fr-FR`,
   `it-IT`, `es-ES`, `ja-JP`), voice picker, and a 0.75× slow-playback mode.
 - **Deck manager** — search, filter by level/state, edit, delete; quick-add modal.

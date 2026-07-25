@@ -268,6 +268,20 @@ kbd { background: var(--surface-solid); border: 1px solid var(--border); border-
 .chip.rate-again { color: var(--danger); } .chip.rate-hard { color: var(--learning); }
 .chip.rate-good { color: var(--new); } .chip.rate-easy { color: var(--mastered); }
 
+/* ---------- Word mining + example cycling ---------- */
+.mine { cursor: pointer; border-bottom: 1px dashed rgba(148,163,184,0.5); transition: 0.12s; border-radius: 3px; padding: 0 1px; }
+.mine:hover { background: rgba(34,211,238,0.16); border-bottom-color: var(--accent); color: var(--accent); }
+.example-cycle { margin-top: 10px; font-size: 0.8rem; padding: 7px 14px; }
+
+/* ---------- Modal: mining note + extra examples ---------- */
+.modal-note { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25); color: var(--accent); border-radius: 10px; padding: 9px 12px; font-size: 0.82rem; }
+.modal-note:empty { display: none; }
+.btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+.extra-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.extra-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.ex-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+.ex-row .icon-btn { width: 34px; height: 34px; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 720px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }

@@ -52,6 +52,7 @@ function newCard(fields) {
     id: uid(),
     word: "", article: "", gender: "", pos: "Noun", level: "A1",
     ipa: "", meaning: "", sentence: "", translation: "", notes: "", inflection: "",
+    extraExamples: [],   // [{ sentence, translation }] — extra variations
     interval: 0, repetition: 0, easeFactor: 2.5,
     nextReviewDate: new Date(0).toISOString(),
     lastReview: null, reviews: 0, lapses: 0,
@@ -113,7 +114,10 @@ const Store = {
       s.settings || {}
     );
     s.meta = s.meta || { created: nowISO() };
-    s.cards.forEach(c => { if (c.inflection === undefined) c.inflection = ""; });
+    s.cards.forEach(c => {
+      if (c.inflection === undefined) c.inflection = "";
+      if (!Array.isArray(c.extraExamples)) c.extraExamples = [];
+    });
   },
   save() {
     try { localStorage.setItem(this.key(), JSON.stringify(this.state)); }
@@ -234,12 +238,44 @@ function clozeSentence(c) {
     + `<span class="cloze">[…]</span>`
     + escapeHtml(c.sentence.slice(hit.end));
 }
-function highlightWord(c) {
-  const hit = locateTarget(c);
-  if (!hit) return escapeHtml(c.sentence);
-  return escapeHtml(c.sentence.slice(0, hit.start))
-    + `<span class="highlight-word">${escapeHtml(c.sentence.slice(hit.start, hit.end))}</span>`
-    + escapeHtml(c.sentence.slice(hit.end));
+const LETTER = window.LeTrainer.match.LETTER;
+
+// All example variations for a card: primary sentence first, then extras.
+function cardExamples(c) {
+  const list = [{ sentence: c.sentence, translation: c.translation }];
+  (c.extraExamples || []).forEach(e => { if (e && e.sentence) list.push({ sentence: e.sentence, translation: e.translation || "" }); });
+  return list.filter(e => e.sentence);
+}
+
+// Render a sentence with the target highlighted and (optionally) other words
+// tappable for word-mining. Mining is offered only for space-delimited scripts.
+function renderSentenceTokens(sentenceStr, card, mineable) {
+  const probe = { word: card.word, inflection: card.inflection, sentence: sentenceStr };
+  const hit = locateTarget(probe);
+  const canMine = mineable && /\s/.test(sentenceStr);
+  const seg = (t) => canMine ? mineTokens(t) : escapeHtml(t);
+  if (!hit) return seg(sentenceStr);
+  return seg(sentenceStr.slice(0, hit.start))
+    + `<span class="highlight-word">${escapeHtml(sentenceStr.slice(hit.start, hit.end))}</span>`
+    + seg(sentenceStr.slice(hit.end));
+}
+
+// Wrap word runs (2+ letters) in tappable "mine" spans; escape everything else.
+function mineTokens(text) {
+  const re = new RegExp("[" + LETTER + "]{2,}", "gi");
+  let out = "", last = 0, m;
+  while ((m = re.exec(text))) {
+    out += escapeHtml(text.slice(last, m.index));
+    const w = m[0];
+    out += `<span class="mine" data-w="${escapeHtml(w)}" title="Add “${escapeHtml(w)}” to your deck">${escapeHtml(w)}</span>`;
+    last = m.index + w.length;
+  }
+  out += escapeHtml(text.slice(last));
+  return out;
+}
+
+function sentenceHintSuffix(canMine) {
+  return canMine ? ` — tap a word to add it` : "";
 }
 
 /* ---------------------------------------------------------
@@ -250,6 +286,12 @@ const IPA_TIP = "Pronunciation (IPA)";
 
 const Review = {
   queue: [], current: null, flipped: false, mode: "test",
+  exampleIdx: 0, shownSentence: null, shownTranslation: "",
+
+  // Sentence to speak: the currently-shown example (back), else the primary.
+  playText() {
+    return this.shownSentence || (this.current && (this.current.sentence || this.current.word)) || "";
+  },
 
   buildQueue() {
     const now = new Date();
@@ -263,11 +305,48 @@ const Review = {
   start() { this.buildQueue(); this.next(); },
   next() {
     this.flipped = false;
+    this.exampleIdx = 0;
+    this.shownSentence = null;
     this.current = this.queue.shift() || null;
     if (!this.current) { this.renderDone(); }
     else if (this.current.reviews === 0) { this.mode = "learn"; this.renderLearn(); }
     else { this.mode = "test"; this.render(); }
     App.updateCounts();
+  },
+  // Study a specific card next, re-queuing the current one (used by word-mining).
+  injectNext(card) {
+    if (this.current && this.current.id !== card.id) this.queue.unshift(this.current);
+    this.queue = this.queue.filter(c => c.id !== card.id);
+    this.queue.unshift(card);
+    this.next();
+  },
+  // Cycle to the next stored example variation and re-render just that block.
+  cycleExample() {
+    const list = cardExamples(this.current);
+    if (list.length < 2) return;
+    this.exampleIdx = (this.exampleIdx + 1) % list.length;
+    const block = document.getElementById("exampleBlock");
+    if (block) block.outerHTML = this.exampleHtml(this.current);
+    if (Store.settings.autoPlay) Audio.speak(this.playText());
+  },
+  // The example block (target highlighted, words mineable, cycle button).
+  exampleHtml(c) {
+    const list = cardExamples(c);
+    const idx = this.exampleIdx % list.length;
+    const ex = list[idx];
+    this.shownSentence = ex.sentence;
+    this.shownTranslation = ex.translation || "";
+    const canMine = /\s/.test(ex.sentence);
+    const more = list.length > 1
+      ? `<button class="btn example-cycle" data-cycle="1">↻ Another example (${idx + 1}/${list.length})</button>`
+      : "";
+    return `
+      <div class="back-block" id="exampleBlock">
+        <span class="lbl">Example${sentenceHintSuffix(canMine)}</span>
+        <div class="fr-line">${renderSentenceTokens(ex.sentence, c, true)}</div>
+        ${ex.translation ? `<div class="en-line">${escapeHtml(ex.translation)}</div>` : ""}
+        ${more}
+      </div>`;
   },
 
   // Learn-first: a brand-new word is introduced, not tested. Everything is
@@ -293,11 +372,7 @@ const Review = {
           <button class="audio-btn" data-act="slow">${ui.slow}</button>
         </div>
         <div class="learn-meaning">= ${escapeHtml(c.meaning)}</div>
-        <div class="back-block">
-          <span class="lbl">Example</span>
-          <div class="fr-line">${highlightWord(c)}</div>
-          ${c.translation ? `<div class="en-line">${escapeHtml(c.translation)}</div>` : ""}
-        </div>
+        ${this.exampleHtml(c)}
         ${c.notes ? `<div class="back-block"><span class="lbl">Notes</span>${escapeHtml(c.notes)}</div>` : ""}
         <div class="learn-actions">
           <button class="btn btn-accent learn-next" data-learn="${RATING.GOOD}">Got it — next →</button>
@@ -305,11 +380,11 @@ const Review = {
         </div>
         <div class="tap-hint">A new word — just learn it now. We'll quiz you on it in a later session.</div>
       </div>`;
-    if (Store.settings.autoPlay) Audio.speak(c.sentence || c.word);
+    if (Store.settings.autoPlay) Audio.speak(this.playText());
     const card = document.getElementById("flashcard");
     card.querySelectorAll(".audio-btn").forEach(b => b.addEventListener("click", (e) => {
       e.stopPropagation();
-      Audio.speak(this.current.sentence || this.current.word, { slow: b.dataset.act === "slow" });
+      Audio.speak(this.playText(), { slow: b.dataset.act === "slow" });
     }));
     card.querySelectorAll("[data-learn]").forEach(b =>
       b.addEventListener("click", () => this.commit(parseInt(b.dataset.learn, 10), true)));
@@ -344,15 +419,15 @@ const Review = {
         <div class="tap-hint" id="tapHint">Tap card or press Space to flip</div>
       </div>`;
 
-    if (Store.settings.autoPlay) Audio.speak(c.sentence || c.word);
+    if (Store.settings.autoPlay) Audio.speak(this.playText());
     this._bindCard();
   },
   _bindCard() {
     document.getElementById("flashcard").addEventListener("click", (e) => {
       const act = e.target.dataset.act;
-      if (act === "play") { e.stopPropagation(); Audio.speak(this.current.sentence || this.current.word); return; }
-      if (act === "slow") { e.stopPropagation(); Audio.speak(this.current.sentence || this.current.word, { slow: true }); return; }
-      if (e.target.closest(".rate-row")) return;
+      if (act === "play") { e.stopPropagation(); Audio.speak(this.playText()); return; }
+      if (act === "slow") { e.stopPropagation(); Audio.speak(this.playText(), { slow: true }); return; }
+      if (e.target.closest(".rate-row") || e.target.closest(".mine") || e.target.closest("[data-cycle]")) return;
       if (!this.flipped) this.flip();
     });
   },
@@ -368,11 +443,7 @@ const Review = {
       <div class="card-back">
         <div class="back-meaning">${escapeHtml(c.meaning)}</div>
         ${c.ipa ? `<div class="card-ipa" title="${IPA_TIP}">${escapeHtml(c.ipa)}</div>` : ""}
-        <div class="back-block">
-          <span class="lbl">Example</span>
-          <div class="fr-line">${highlightWord(c)}</div>
-          ${c.translation ? `<div class="en-line">${escapeHtml(c.translation)}</div>` : ""}
-        </div>
+        ${this.exampleHtml(c)}
         ${c.notes ? `<div class="back-block"><span class="lbl">Notes</span>${escapeHtml(c.notes)}</div>` : ""}
         <div class="rate-row">
           ${rateBtn(RATING.AGAIN, "Again", "1", p[RATING.AGAIN], "rate-again", "no idea")}
@@ -630,12 +701,17 @@ const Data = {
    12. Modal (add / edit)
    --------------------------------------------------------- */
 const Modal = {
-  el: null,
+  el: null, studyNow: false,
   bind() {
     this.el = document.getElementById("modal");
     document.getElementById("quickAddBtn").addEventListener("click", () => this.openAdd());
     document.getElementById("modalClose").addEventListener("click", () => this.close());
     document.getElementById("cancelForm").addEventListener("click", () => this.close());
+    document.getElementById("addExample").addEventListener("click", () => this.addExampleRow());
+    document.getElementById("saveStudy").addEventListener("click", () => {
+      this.studyNow = true;
+      document.getElementById("cardForm").requestSubmit();   // runs validation → save()
+    });
     this.el.addEventListener("click", e => { if (e.target === this.el) this.close(); });
     document.getElementById("cardForm").addEventListener("submit", e => { e.preventDefault(); this.save(); });
   },
@@ -644,16 +720,41 @@ const Modal = {
     const sel = document.getElementById("f_gender");
     sel.innerHTML = Lang.pack().genders.map(g => `<option value="${g.v}">${g.t}</option>`).join("");
   },
+  note(msg) { document.getElementById("modalNote").textContent = msg || ""; },
+  clearExamples() { document.getElementById("extraExamples").innerHTML = ""; },
+  addExampleRow(sentence = "", translation = "") {
+    const row = document.createElement("div");
+    row.className = "ex-row";
+    row.innerHTML = `
+      <input class="input ex-sent" placeholder="Another example sentence" />
+      <input class="input ex-tr" placeholder="Its translation (optional)" />
+      <button type="button" class="icon-btn ex-del" title="Remove">✕</button>`;
+    row.querySelector(".ex-sent").value = sentence;
+    row.querySelector(".ex-tr").value = translation;
+    row.querySelector(".ex-del").addEventListener("click", () => row.remove());
+    document.getElementById("extraExamples").appendChild(row);
+    return row;
+  },
+  collectExamples() {
+    return [...document.querySelectorAll("#extraExamples .ex-row")]
+      .map(r => ({ sentence: r.querySelector(".ex-sent").value.trim(), translation: r.querySelector(".ex-tr").value.trim() }))
+      .filter(e => e.sentence);
+  },
+
   openAdd() {
     document.getElementById("modalTitle").textContent = `Add a ${Lang.pack().name} card`;
     document.getElementById("cardForm").reset();
     document.getElementById("f_id").value = "";
+    this.clearExamples();
+    this.note("");
+    this.studyNow = false;
     this.el.classList.remove("hidden");
     document.getElementById("f_word").focus();
   },
   openEdit(id) {
     const c = Store.cards.find(x => x.id === id);
     if (!c) return;
+    document.getElementById("cardForm").reset();
     document.getElementById("modalTitle").textContent = "Edit card";
     const g = c.article ? `${c.article}|${c.gender}` : "";
     setVal("f_id", c.id); setVal("f_word", c.word); setVal("f_gender", g);
@@ -661,10 +762,40 @@ const Modal = {
     setVal("f_meaning", c.meaning); setVal("f_sentence", c.sentence);
     setVal("f_translation", c.translation); setVal("f_notes", c.notes);
     setVal("f_inflection", c.inflection);
+    this.clearExamples();
+    (c.extraExamples || []).forEach(e => this.addExampleRow(e.sentence, e.translation || ""));
+    this.note("");
+    this.studyNow = false;
     this.el.classList.remove("hidden");
+  },
+  // Word-mining entry point: capture a word tapped in a sentence.
+  openMine(word, sentence, translation) {
+    const w = (word || "").trim();
+    if (!w) return;
+    const existing = Store.cards.find(c => c.word.toLowerCase() === w.toLowerCase());
+    if (existing) {
+      this.openEdit(existing.id);
+      document.getElementById("modalTitle").textContent = `Edit “${w}”`;
+      const already = existing.sentence === sentence || (existing.extraExamples || []).some(e => e.sentence === sentence);
+      if (sentence && !already) {
+        this.addExampleRow(sentence, translation || "");
+        this.note(`You already have “${w}” — added this sentence as another example. Save to keep it.`);
+      } else {
+        this.note(`You already have “${w}” in your deck.`);
+      }
+    } else {
+      this.openAdd();
+      document.getElementById("modalTitle").textContent = `Add “${w}”`;
+      setVal("f_word", w);
+      setVal("f_sentence", sentence || "");
+      setVal("f_translation", translation || "");
+      this.note("Mined from your sentence — just add the meaning and save.");
+      document.getElementById("f_meaning").focus();
+    }
   },
   save() {
     const id = getVal("f_id");
+    const study = this.studyNow; this.studyNow = false;
     const [article, gender] = (getVal("f_gender") || "|").split("|");
     const fields = {
       word: getVal("f_word").trim(), article, gender,
@@ -672,12 +803,17 @@ const Modal = {
       ipa: getVal("f_ipa").trim(), meaning: getVal("f_meaning").trim(),
       sentence: getVal("f_sentence").trim(), translation: getVal("f_translation").trim(),
       notes: getVal("f_notes").trim(), inflection: getVal("f_inflection").trim(),
+      extraExamples: this.collectExamples(),
     };
-    if (id) { Object.assign(Store.cards.find(x => x.id === id), fields); Toast.show("Card updated ✓"); }
-    else { Store.cards.push(newCard(fields)); Toast.show("Card added ✓"); }
-    Store.save(); this.close(); App.refreshAll();
+    let card;
+    if (id) { card = Store.cards.find(x => x.id === id); Object.assign(card, fields); Toast.show("Card updated ✓"); }
+    else { card = newCard(fields); Store.cards.push(card); Toast.show("Card added ✓"); }
+    Store.save();
+    this.close();
+    if (study) { App.updateCounts(); App.go("review"); Review.injectNext(card); }
+    else { App.refreshAll(); }
   },
-  close() { this.el.classList.add("hidden"); },
+  close() { this.el.classList.add("hidden"); this.studyNow = false; },
 };
 
 /* ---------------------------------------------------------
@@ -755,6 +891,12 @@ const App = {
     document.getElementById("filterLevel").addEventListener("change", () => DeckManager.render());
     document.getElementById("filterState").addEventListener("change", () => DeckManager.render());
     document.getElementById("studyAgainBtn").addEventListener("click", () => Review.studyMore());
+    // Delegated on the persistent card stage: word-mining + example cycling.
+    document.getElementById("cardStage").addEventListener("click", e => {
+      const mine = e.target.closest(".mine");
+      if (mine) { e.stopPropagation(); Modal.openMine(mine.dataset.w, Review.shownSentence, Review.shownTranslation); return; }
+      if (e.target.closest("[data-cycle]")) { e.stopPropagation(); Review.cycleExample(); }
+    });
     Review.start();
     this.updateCounts();
     Onboarding.maybeShow();   // shows only on first ever visit
@@ -825,11 +967,11 @@ const App = {
       if (this.view !== "review" || !Review.current) return;
       if (Review.mode === "learn") {
         if (e.key === " " || e.key === "Enter") { e.preventDefault(); Review.commit(RATING.GOOD, true); }
-        else if (e.key === "r" || e.key === "R") { Audio.speak(Review.current.sentence || Review.current.word); }
+        else if (e.key === "r" || e.key === "R") { Audio.speak(Review.playText()); }
         return;
       }
       if (e.key === " " || e.key === "Enter") { e.preventDefault(); Review.flip(); }
-      else if (e.key === "r" || e.key === "R") { Audio.speak(Review.current.sentence || Review.current.word); }
+      else if (e.key === "r" || e.key === "R") { Audio.speak(Review.playText()); }
       else if (["1","2","3","4"].includes(e.key) && Review.flipped) { Review.rate(parseInt(e.key, 10)); }
     });
   },

@@ -180,6 +180,7 @@
     </div>
     <form id="cardForm" class="modal-body">
       <input type="hidden" id="f_id" />
+      <p id="modalNote" class="modal-note"></p>
       <div class="field-grid">
         <label class="field"><span id="wordLabel">Word / phrase</span>*
           <input type="text" id="f_word" class="input" required placeholder="eau" />
@@ -219,8 +220,17 @@
       <label class="field">Grammar / notes
         <input type="text" id="f_notes" class="input" placeholder="partitive de l'" />
       </label>
+      <div class="field">
+        <div class="extra-head">
+          <span>Additional examples (optional)</span>
+          <button type="button" class="btn btn-sm" id="addExample">+ example</button>
+        </div>
+        <div id="extraExamples" class="extra-list"></div>
+        <p class="muted" style="margin:4px 0 0">Extra sentences show behind an “↻ Another example” button during review.</p>
+      </div>
       <div class="modal-foot">
         <button type="button" class="btn" id="cancelForm">Cancel</button>
+        <button type="button" class="btn" id="saveStudy">Save &amp; study now</button>
         <button type="submit" class="btn btn-accent">Save card</button>
       </div>
     </form>
