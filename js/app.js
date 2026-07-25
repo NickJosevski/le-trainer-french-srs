@@ -768,7 +768,7 @@ const App = {
     sel.addEventListener("change", e => Lang.switch(e.target.value));
   },
 
-  // Apply language-specific chrome: flag, tagline, done text, gender options, voices.
+  // Apply language-specific chrome: flag, tagline, done text, labels, voices.
   applyChrome() {
     const pack = Lang.pack();
     const stripes = document.querySelectorAll(".flag i");
@@ -777,6 +777,10 @@ const App = {
     document.getElementById("doneTitle").textContent = pack.ui.doneTitle;
     document.getElementById("doneSub").textContent = pack.ui.doneSub;
     document.getElementById("langSelect").value = pack.code;
+    // Labels that name the active language.
+    document.getElementById("voiceLabel").textContent = `${pack.name} voice`;
+    document.getElementById("wordLabel").textContent = `${pack.name} word / phrase`;
+    document.getElementById("sentenceLabel").textContent = `Example sentence (${pack.name})`;
     Modal.populateGenders();
     Settings.populateVoices();
   },

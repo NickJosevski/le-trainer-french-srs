@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#0f172a" />
-<title>Le Trainer — French Vocabulary SRS</title>
+<title>Le Trainer — Vocabulary SRS</title>
 <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -15,7 +15,7 @@
       <span class="flag" aria-hidden="true"><i></i><i></i><i></i></span>
       <div>
         <h1>Le&nbsp;Trainer</h1>
-        <p class="tagline">French Vocabulary · Spaced Repetition</p>
+        <p class="tagline">Vocabulary · Spaced Repetition</p>
       </div>
     </div>
     <nav class="tabs" role="tablist">
@@ -130,9 +130,10 @@
       <div class="glass panel">
         <h3>Audio</h3>
         <label class="row-setting">
-          <span>French voice</span>
+          <span id="voiceLabel">Voice</span>
           <select id="voiceSelect" class="input"></select>
         </label>
+        <p class="muted" style="margin:2px 0 0">The voice follows the language you're studying, and is saved separately for each.</p>
         <label class="row-setting">
           <span>Slow playback (0.75×)</span>
           <input type="checkbox" id="slowAudio" />
@@ -180,7 +181,7 @@
     <form id="cardForm" class="modal-body">
       <input type="hidden" id="f_id" />
       <div class="field-grid">
-        <label class="field">French word / phrase*
+        <label class="field"><span id="wordLabel">Word / phrase</span>*
           <input type="text" id="f_word" class="input" required placeholder="eau" />
         </label>
         <label class="field">Article / gender
@@ -206,7 +207,7 @@
           <input type="text" id="f_meaning" class="input" required placeholder="water" />
         </label>
       </div>
-      <label class="field">Example sentence (French)*
+      <label class="field"><span id="sentenceLabel">Example sentence</span>*
         <input type="text" id="f_sentence" class="input" required placeholder="Je bois de l'eau." />
       </label>
       <label class="field">Sentence translation (English)
