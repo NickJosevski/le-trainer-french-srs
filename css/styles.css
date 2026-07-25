@@ -228,6 +228,46 @@ kbd { background: var(--surface-solid); border: 1px solid var(--border); border-
 /* ---------- Toast ---------- */
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface-solid); border: 1px solid var(--border); color: var(--text); padding: 12px 20px; border-radius: 12px; box-shadow: var(--shadow); z-index: 80; font-size: 0.88rem; animation: fade 0.2s; }
 
+/* ---------- Help button ---------- */
+.help-btn { width: 38px; padding: 9px 0; font-weight: 800; font-size: 1rem; border-radius: 12px; }
+
+/* ---------- Rating button plain-language hint ---------- */
+.rate-btn .rate-hint { font-size: 0.66rem; color: var(--muted); line-height: 1.1; margin-top: 1px; }
+
+/* ---------- Learn-first (new word) card ---------- */
+.learn-card { align-items: stretch; }
+.learn-badge { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 10px; border-radius: 6px; background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; }
+.learn-meaning { font-size: 1.6rem; font-weight: 700; text-align: center; margin: 2px 0; }
+.learn-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.learn-next { padding: 14px; font-size: 0.95rem; }
+.learn-known { padding: 10px; font-size: 0.82rem; color: var(--muted); }
+
+/* ---------- Overlays (welcome / help) ---------- */
+.overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.78); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; animation: fade 0.25s; }
+
+.welcome-card { width: 100%; max-width: 460px; padding: 30px 28px; text-align: center; }
+.welcome-emoji { font-size: 2.6rem; }
+.welcome-card h2 { margin: 8px 0 6px; letter-spacing: -0.02em; }
+.welcome-sub { color: var(--muted); font-size: 0.92rem; margin-bottom: 18px; }
+.welcome-steps { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 12px; margin: 0 0 20px; }
+.welcome-steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 0.92rem; }
+.step-n { flex: 0 0 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
+.welcome-lang { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 0.9rem; color: var(--muted); margin-bottom: 18px; }
+.welcome-lang .input { width: auto; font-weight: 600; }
+.welcome-start { width: 100%; padding: 14px; font-size: 1rem; }
+.welcome-foot { color: var(--muted); font-size: 0.76rem; margin-top: 14px; }
+
+.help-card { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+.help-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+.help-body section h3 { font-size: 0.95rem; margin-bottom: 6px; }
+.help-body section p { color: var(--text); font-size: 0.88rem; }
+.help-ratings, .help-gloss { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 8px 0; font-size: 0.88rem; }
+.help-gloss li { color: var(--muted); }
+.help-gloss b { color: var(--text); }
+.chip { display: inline-block; min-width: 54px; text-align: center; font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; margin-right: 8px; border: 1px solid var(--border); }
+.chip.rate-again { color: var(--danger); } .chip.rate-hard { color: var(--learning); }
+.chip.rate-good { color: var(--new); } .chip.rate-easy { color: var(--mastered); }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 720px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
@@ -237,4 +277,5 @@ kbd { background: var(--surface-solid); border: 1px solid var(--border); border-
   .card-front-word { font-size: 2rem; }
   .card-sentence { font-size: 1.15rem; }
   .rate-btn { padding: 14px 2px; }
+  .learn-meaning { font-size: 1.35rem; }
 }

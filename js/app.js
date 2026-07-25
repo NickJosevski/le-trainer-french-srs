@@ -245,8 +245,11 @@ function highlightWord(c) {
 /* ---------------------------------------------------------
    7. Review controller
    --------------------------------------------------------- */
+const LEVEL_TIP = "Difficulty (CEFR): A1 easiest / beginner → C1 advanced";
+const IPA_TIP = "Pronunciation (IPA)";
+
 const Review = {
-  queue: [], current: null, flipped: false,
+  queue: [], current: null, flipped: false, mode: "test",
 
   buildQueue() {
     const now = new Date();
@@ -261,10 +264,57 @@ const Review = {
   next() {
     this.flipped = false;
     this.current = this.queue.shift() || null;
-    if (!this.current) this.renderDone();
-    else this.render();
+    if (!this.current) { this.renderDone(); }
+    else if (this.current.reviews === 0) { this.mode = "learn"; this.renderLearn(); }
+    else { this.mode = "test"; this.render(); }
     App.updateCounts();
   },
+
+  // Learn-first: a brand-new word is introduced, not tested. Everything is
+  // shown up front so a beginner isn't guessing at a word they've never seen.
+  renderLearn() {
+    const c = this.current;
+    const ui = Lang.pack().ui;
+    const stage = document.getElementById("cardStage");
+    document.getElementById("sessionDone").classList.add("hidden");
+    stage.classList.remove("hidden");
+    stage.innerHTML = `
+      <div class="flashcard learn-card" id="flashcard">
+        <div class="card-tags">
+          <span class="learn-badge">New word</span>
+          <span class="tag tag-level" title="${LEVEL_TIP}">${c.level}</span>
+          <span class="tag">${c.pos}</span>
+          ${c.gender ? `<span class="tag tag-gender">[${c.gender}]</span>` : ""}
+        </div>
+        <div class="card-front-word">${articleHtml(c)}${escapeHtml(c.word)}</div>
+        ${c.ipa ? `<div class="card-ipa" title="${IPA_TIP}">${escapeHtml(c.ipa)}</div>` : ""}
+        <div class="audio-row">
+          <button class="audio-btn" data-act="play">${ui.listen}</button>
+          <button class="audio-btn" data-act="slow">${ui.slow}</button>
+        </div>
+        <div class="learn-meaning">= ${escapeHtml(c.meaning)}</div>
+        <div class="back-block">
+          <span class="lbl">Example</span>
+          <div class="fr-line">${highlightWord(c)}</div>
+          ${c.translation ? `<div class="en-line">${escapeHtml(c.translation)}</div>` : ""}
+        </div>
+        ${c.notes ? `<div class="back-block"><span class="lbl">Notes</span>${escapeHtml(c.notes)}</div>` : ""}
+        <div class="learn-actions">
+          <button class="btn btn-accent learn-next" data-learn="${RATING.GOOD}">Got it — next →</button>
+          <button class="btn learn-known" data-learn="${RATING.EASY}">I already knew this</button>
+        </div>
+        <div class="tap-hint">A new word — just learn it now. We'll quiz you on it in a later session.</div>
+      </div>`;
+    if (Store.settings.autoPlay) Audio.speak(c.sentence || c.word);
+    const card = document.getElementById("flashcard");
+    card.querySelectorAll(".audio-btn").forEach(b => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      Audio.speak(this.current.sentence || this.current.word, { slow: b.dataset.act === "slow" });
+    }));
+    card.querySelectorAll("[data-learn]").forEach(b =>
+      b.addEventListener("click", () => this.commit(parseInt(b.dataset.learn, 10), true)));
+  },
+
   render() {
     const c = this.current;
     const ui = Lang.pack().ui;
@@ -280,7 +330,7 @@ const Review = {
     stage.innerHTML = `
       <div class="flashcard" id="flashcard">
         <div class="card-tags">
-          <span class="tag tag-level">${c.level}</span>
+          <span class="tag tag-level" title="${LEVEL_TIP}">${c.level}</span>
           <span class="tag">${c.pos}</span>
           ${c.gender ? `<span class="tag tag-gender">[${c.gender}]</span>` : ""}
         </div>
@@ -307,7 +357,7 @@ const Review = {
     });
   },
   flip() {
-    if (!this.current || this.flipped) return;
+    if (!this.current || this.mode !== "test" || this.flipped) return;
     this.flipped = true;
     const c = this.current;
     const p = SRS.preview(c);
@@ -317,7 +367,7 @@ const Review = {
       <div class="divider"></div>
       <div class="card-back">
         <div class="back-meaning">${escapeHtml(c.meaning)}</div>
-        ${c.ipa ? `<div class="card-ipa">${escapeHtml(c.ipa)}</div>` : ""}
+        ${c.ipa ? `<div class="card-ipa" title="${IPA_TIP}">${escapeHtml(c.ipa)}</div>` : ""}
         <div class="back-block">
           <span class="lbl">Example</span>
           <div class="fr-line">${highlightWord(c)}</div>
@@ -325,10 +375,10 @@ const Review = {
         </div>
         ${c.notes ? `<div class="back-block"><span class="lbl">Notes</span>${escapeHtml(c.notes)}</div>` : ""}
         <div class="rate-row">
-          ${rateBtn(RATING.AGAIN, "Again", "1", p[RATING.AGAIN], "rate-again")}
-          ${rateBtn(RATING.HARD, "Hard", "2", p[RATING.HARD], "rate-hard")}
-          ${rateBtn(RATING.GOOD, "Good", "3", p[RATING.GOOD], "rate-good")}
-          ${rateBtn(RATING.EASY, "Easy", "4", p[RATING.EASY], "rate-easy")}
+          ${rateBtn(RATING.AGAIN, "Again", "1", p[RATING.AGAIN], "rate-again", "no idea")}
+          ${rateBtn(RATING.HARD, "Hard", "2", p[RATING.HARD], "rate-hard", "tough")}
+          ${rateBtn(RATING.GOOD, "Good", "3", p[RATING.GOOD], "rate-good", "got it")}
+          ${rateBtn(RATING.EASY, "Easy", "4", p[RATING.EASY], "rate-easy", "too easy")}
         </div>
       </div>`;
     document.querySelectorAll(".rate-btn").forEach(b => {
@@ -336,7 +386,12 @@ const Review = {
     });
   },
   rate(rating) {
-    if (!this.current || !this.flipped) return;
+    if (!this.current || this.mode !== "test" || !this.flipped) return;
+    this.commit(rating, false);
+  },
+  // Shared scheduling path for both the learn card and a rated review.
+  commit(rating, wasLearn) {
+    if (!this.current) return;
     const c = this.current;
     const wasNew = c.reviews === 0;
     SRS.apply(c, rating);
@@ -345,7 +400,8 @@ const Review = {
     Store.state.log.push({ date: k, correct: rating >= RATING.GOOD, isNew: wasNew });
     Store.save();
     this.next();
-    Toast.flashInterval(fmtInterval(c.interval), rating);
+    if (wasLearn) Toast.show("Learned ✓ — you'll be quizzed next time");
+    else Toast.flashInterval(fmtInterval(c.interval), rating);
   },
   renderDone() {
     document.getElementById("cardStage").classList.add("hidden");
@@ -353,9 +409,10 @@ const Review = {
   },
 };
 
-function rateBtn(rating, label, key, interval, cls) {
+function rateBtn(rating, label, key, interval, cls, hint) {
   return `<button class="rate-btn ${cls}" data-rating="${rating}">
     <span class="rate-label">${label}</span>
+    <span class="rate-hint">${hint}</span>
     <span class="rate-int">${interval}</span>
     <span class="rate-key">[${key}]</span>
   </button>`;
@@ -615,6 +672,39 @@ const Toast = {
 };
 
 /* ---------------------------------------------------------
+   13b. Onboarding (first-run welcome) + Help overlay
+   --------------------------------------------------------- */
+const Onboarding = {
+  KEY: "leTrainer.onboarded",
+  maybeShow() {
+    if (localStorage.getItem(this.KEY)) return;
+    const sel = document.getElementById("welcomeLang");
+    sel.innerHTML = Lang.all().map(p =>
+      `<option value="${p.code}" ${p.code === Lang.code ? "selected" : ""}>${p.name}</option>`
+    ).join("");
+    document.getElementById("welcome").classList.remove("hidden");
+    document.getElementById("welcomeStart").addEventListener("click", () => this.finish());
+  },
+  finish() {
+    const code = document.getElementById("welcomeLang").value;
+    localStorage.setItem(this.KEY, "1");
+    document.getElementById("welcome").classList.add("hidden");
+    if (code && code !== Lang.code) Lang.switch(code);   // Lang.switch restarts the session
+    else Review.start();
+  },
+};
+
+const Help = {
+  bind() {
+    document.getElementById("helpBtn").addEventListener("click", () => this.open());
+    document.getElementById("helpClose").addEventListener("click", () => this.close());
+    document.getElementById("help").addEventListener("click", e => { if (e.target.id === "help") this.close(); });
+  },
+  open() { document.getElementById("help").classList.remove("hidden"); },
+  close() { document.getElementById("help").classList.add("hidden"); },
+};
+
+/* ---------------------------------------------------------
    14. App — router, chrome, keyboard, wiring
    --------------------------------------------------------- */
 const App = {
@@ -629,6 +719,7 @@ const App = {
     Audio.init();
     Modal.bind();
     Settings.bind();
+    Help.bind();
     this.buildLangSwitcher();
     this.applyChrome();
     this.bindTabs();
@@ -639,6 +730,7 @@ const App = {
     document.getElementById("studyAgainBtn").addEventListener("click", () => Review.start());
     Review.start();
     this.updateCounts();
+    Onboarding.maybeShow();   // shows only on first ever visit
   },
 
   buildLangSwitcher() {
@@ -691,13 +783,20 @@ const App = {
     if (this.view === "review") Review.start();
   },
   bindKeyboard() {
+    const isOpen = id => !document.getElementById(id).classList.contains("hidden");
     document.addEventListener("keydown", e => {
       if (e.target.matches("input, textarea, select")) return;
-      if (!document.getElementById("modal").classList.contains("hidden")) {
-        if (e.key === "Escape") Modal.close();
+      // Overlays capture keys first.
+      if (isOpen("welcome")) return;                       // must choose a language to proceed
+      if (isOpen("help")) { if (e.key === "Escape") Help.close(); return; }
+      if (isOpen("modal")) { if (e.key === "Escape") Modal.close(); return; }
+
+      if (this.view !== "review" || !Review.current) return;
+      if (Review.mode === "learn") {
+        if (e.key === " " || e.key === "Enter") { e.preventDefault(); Review.commit(RATING.GOOD, true); }
+        else if (e.key === "r" || e.key === "R") { Audio.speak(Review.current.sentence || Review.current.word); }
         return;
       }
-      if (this.view !== "review" || !Review.current) return;
       if (e.key === " " || e.key === "Enter") { e.preventDefault(); Review.flip(); }
       else if (e.key === "r" || e.key === "R") { Audio.speak(Review.current.sentence || Review.current.word); }
       else if (["1","2","3","4"].includes(e.key) && Review.flipped) { Review.rate(parseInt(e.key, 10)); }

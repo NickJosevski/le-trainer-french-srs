@@ -12,6 +12,12 @@ step — just open `index.html`.
   Japanese 🇯🇵, German 🇩🇪, and Mandarin Chinese 🇨🇳, switchable from the top
   bar. Each language has its own deck, voice, stemmer, articles, and independent
   SRS progress. Adding another is just a new file in `js/lang/`.
+- **Beginner-friendly onboarding** — a first-run welcome walks you through the
+  idea and lets you pick a language. Brand-new words appear as a no-pressure
+  **learn card** (see it, hear it, learn the meaning) *before* you're ever
+  quizzed, so you're never guessing at a word you've never met. Rating buttons
+  carry plain-language hints ("no idea / tough / got it / too easy") and a **?**
+  help panel explains the loop, shortcuts, and jargon (cloze, IPA, CEFR).
 - **SM-2 spaced repetition** — Again / Hard / Good / Easy ratings with live
   next-interval previews; cards flow through New → Learning → Review → Mastered.
 - **Grammar-aware cards** — article + gender tag (`le` / `la` / `il` / `la`,

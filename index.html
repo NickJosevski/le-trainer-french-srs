@@ -26,6 +26,7 @@
     </nav>
     <div class="topbar-actions">
       <select id="langSelect" class="input lang-select" aria-label="Language"></select>
+      <button id="helpBtn" class="btn help-btn" title="How it works" aria-label="Help">?</button>
       <button id="quickAddBtn" class="btn btn-accent">+ Add</button>
     </div>
   </header>
@@ -222,6 +223,73 @@
         <button type="submit" class="btn btn-accent">Save card</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ===================== FIRST-RUN WELCOME ===================== -->
+<div id="welcome" class="overlay hidden">
+  <div class="welcome-card glass">
+    <div class="welcome-emoji">👋</div>
+    <h2>Welcome to Le&nbsp;Trainer</h2>
+    <p class="welcome-sub">Learn a language a few words at a time. Here's the whole idea:</p>
+    <ol class="welcome-steps">
+      <li><span class="step-n">1</span> <span><b>Pick a language</b> to start with.</span></li>
+      <li><span class="step-n">2</span> <span><b>Meet a new word</b> — see it, hear it, learn what it means. No pressure.</span></li>
+      <li><span class="step-n">3</span> <span><b>Get quizzed later</b> and tap how well you knew it. We handle the schedule for you.</span></li>
+    </ol>
+    <label class="welcome-lang">I want to learn
+      <select id="welcomeLang" class="input"></select>
+    </label>
+    <button class="btn btn-accent welcome-start" id="welcomeStart">Start learning →</button>
+    <p class="welcome-foot">A few minutes a day is all it takes. You can switch languages any time.</p>
+  </div>
+</div>
+
+<!-- ===================== HELP / HOW IT WORKS ===================== -->
+<div id="help" class="overlay hidden">
+  <div class="help-card glass">
+    <div class="modal-head">
+      <h2>How it works</h2>
+      <button class="icon-btn" id="helpClose" aria-label="Close">✕</button>
+    </div>
+    <div class="help-body">
+      <section>
+        <h3>The daily loop</h3>
+        <p>Meet a few new words, then review them on a schedule. Words you find
+           hard come back sooner; words you know come back later. Just show up
+           most days — even a few minutes helps.</p>
+      </section>
+      <section>
+        <h3>Meeting a new word</h3>
+        <p>New words appear as a <b>learn</b> card first: you see the word, hear
+           it, and read what it means. Nothing to get wrong. You'll be quizzed on
+           it in a later session.</p>
+      </section>
+      <section>
+        <h3>Rating a word you're quizzed on</h3>
+        <ul class="help-ratings">
+          <li><span class="chip rate-again">Again</span> no idea / got it wrong</li>
+          <li><span class="chip rate-hard">Hard</span> right, but a struggle</li>
+          <li><span class="chip rate-good">Good</span> got it</li>
+          <li><span class="chip rate-easy">Easy</span> too easy</li>
+        </ul>
+        <p class="muted">Honest ratings make the schedule smarter. When in doubt, pick <b>Good</b>.</p>
+      </section>
+      <section>
+        <h3>Keyboard</h3>
+        <p><kbd>Space</kbd> flip / next · <kbd>1</kbd>–<kbd>4</kbd> rate · <kbd>R</kbd> replay audio</p>
+      </section>
+      <section>
+        <h3>A few words you'll see</h3>
+        <ul class="help-gloss">
+          <li><b>Cloze</b> — a sentence with the target word blanked out
+              (<span class="cloze">[…]</span>) so you recall it in context.</li>
+          <li><b>IPA</b> — the text in /slashes/ shows how the word is pronounced.</li>
+          <li><b>A1–C1</b> — difficulty (the CEFR scale). <b>A1</b> is easiest / beginner,
+              <b>C1</b> is advanced.</li>
+        </ul>
+      </section>
+    </div>
   </div>
 </div>
 
