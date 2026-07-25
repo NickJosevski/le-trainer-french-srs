@@ -403,9 +403,36 @@ const Review = {
     if (wasLearn) Toast.show("Learned ✓ — you'll be quizzed next time");
     else Toast.flashInterval(fmtInterval(c.interval), rating);
   },
+  // Manual "study more" — pull in remaining new cards even past the daily
+  // cap (the user explicitly asked), plus anything now due. Gives feedback
+  // instead of silently no-op'ing when there's genuinely nothing left.
+  studyMore() {
+    const now = new Date();
+    const due = Store.cards.filter(c => c.reviews > 0 && SRS.isDue(c, now))
+      .sort((a, b) => new Date(a.nextReviewDate) - new Date(b.nextReviewDate));
+    const fresh = Store.cards.filter(c => c.reviews === 0);
+    this.queue = [...due, ...fresh];
+    if (!this.queue.length) { Toast.show("All caught up — nothing left to study right now"); return; }
+    this.next();
+  },
   renderDone() {
     document.getElementById("cardStage").classList.add("hidden");
     document.getElementById("sessionDone").classList.remove("hidden");
+    const now = new Date();
+    const remainingNew = Store.cards.filter(c => c.reviews === 0).length;
+    const dueLater = Store.cards.filter(c => c.reviews > 0 && !SRS.isDue(c, now)).length;
+    const btn = document.getElementById("studyAgainBtn");
+    const sub = document.getElementById("doneSub");
+    if (remainingNew > 0) {
+      btn.classList.remove("hidden");
+      btn.textContent = `Study ${remainingNew} more new word${remainingNew === 1 ? "" : "s"} →`;
+      sub.textContent = `Nice work! ${remainingNew} new word${remainingNew === 1 ? "" : "s"} still waiting whenever you're ready.`;
+    } else {
+      btn.classList.add("hidden");
+      sub.textContent = dueLater
+        ? "You've learned every word in this deck. Come back later as they're due for review."
+        : "You're all caught up. 🎉 Come back later or add your own words with + Add.";
+    }
   },
 };
 
@@ -727,7 +754,7 @@ const App = {
     document.getElementById("deckSearch").addEventListener("input", () => DeckManager.render());
     document.getElementById("filterLevel").addEventListener("change", () => DeckManager.render());
     document.getElementById("filterState").addEventListener("change", () => DeckManager.render());
-    document.getElementById("studyAgainBtn").addEventListener("click", () => Review.start());
+    document.getElementById("studyAgainBtn").addEventListener("click", () => Review.studyMore());
     Review.start();
     this.updateCounts();
     Onboarding.maybeShow();   // shows only on first ever visit
