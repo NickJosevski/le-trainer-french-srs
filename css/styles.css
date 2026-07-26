@@ -268,6 +268,15 @@ kbd { background: var(--surface-solid); border: 1px solid var(--border); border-
 .chip.rate-again { color: var(--danger); } .chip.rate-hard { color: var(--learning); }
 .chip.rate-good { color: var(--new); } .chip.rate-easy { color: var(--mastered); }
 
+/* ---------- Levels ---------- */
+.pill-level { background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(34,211,238,0.2)); border-color: rgba(34,211,238,0.35); color: #e2e8f0; font-weight: 800; }
+.pill-level span { color: var(--accent); font-weight: 700; margin-left: 2px; }
+.level-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.level-now { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; min-width: 40px; }
+.level-bar { flex: 1; height: 12px; border-radius: 999px; background: rgba(15,23,42,0.6); overflow: hidden; }
+.level-bar > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transition: width 0.4s ease; }
+.level-frac { font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 /* ---------- Dictionary form → form-used-here ---------- */
 .form-line { font-size: 0.84rem; color: var(--muted); margin-top: 8px; padding: 6px 10px; background: rgba(99,102,241,0.1); border-radius: 8px; display: inline-block; }
 .form-line b { color: var(--text); font-weight: 700; }

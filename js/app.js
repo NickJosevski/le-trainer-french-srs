@@ -100,7 +100,7 @@ const Store = {
       lang: this.lang,
       cards: buildStarterDeck(),
       history: {}, log: [],
-      settings: { voiceURI: "", slowAudio: false, autoPlay: true, cloze: true, newPerDay: 15 },
+      settings: { voiceURI: "", slowAudio: false, autoPlay: true, cloze: true, newPerDay: 15, level: "A1" },
       meta: { created: nowISO() },
     };
   },
@@ -110,7 +110,7 @@ const Store = {
     s.history = s.history || {};
     s.log = s.log || [];
     s.settings = Object.assign(
-      { voiceURI: "", slowAudio: false, autoPlay: true, cloze: true, newPerDay: 15 },
+      { voiceURI: "", slowAudio: false, autoPlay: true, cloze: true, newPerDay: 15, level: "A1" },
       s.settings || {}
     );
     s.meta = s.meta || { created: nowISO() };
@@ -184,6 +184,56 @@ function fmtInterval(days) {
   if (days < 365) return Math.round(days / 30) + "mo";
   return (days / 365).toFixed(1) + "y";
 }
+
+/* ---------------------------------------------------------
+   4b. Levels — CEFR content progression (A1 → C1)
+   New words are introduced only from the current level and below.
+   The next level auto-unlocks once ~80% of the current level is
+   learned; the user can also switch level manually.
+   --------------------------------------------------------- */
+const CEFR = ["A1", "A2", "B1", "B2", "C1"];
+const LEVEL_THRESHOLD = 0.8;   // fraction of a level "learned" to auto-advance
+
+const Levels = {
+  rank(l) { return CEFR.indexOf(l); },
+  current() { return Store.settings.level || "A1"; },
+  set(level) { Store.settings.level = level; Store.save(); },
+
+  // Distinct CEFR levels that actually exist in this deck, in order.
+  present() {
+    const have = new Set(Store.cards.map(c => c.level));
+    return CEFR.filter(l => have.has(l));
+  },
+  next() {
+    const pres = this.present();
+    const i = pres.indexOf(this.current());
+    return (i >= 0 && i < pres.length - 1) ? pres[i + 1] : null;
+  },
+  // A card counts as "learned" for progression once it's past the initial
+  // learning phase (successfully recalled and scheduled out).
+  isLearned(c) { const s = SRS.stage(c); return s === "review" || s === "mastered"; },
+  levelCards(level = this.current()) { return Store.cards.filter(c => c.level === level); },
+  progress(level = this.current()) {
+    const cards = this.levelCards(level);
+    const learned = cards.filter(c => this.isLearned(c)).length;
+    return { learned, total: cards.length, pct: cards.length ? learned / cards.length : 0 };
+  },
+  isCurrentComplete() { const p = this.progress(); return p.total > 0 && p.pct >= LEVEL_THRESHOLD; },
+
+  // New cards eligible to be introduced: current level and anything below.
+  unlockedNew() {
+    const r = this.rank(this.current());
+    return Store.cards.filter(c => c.reviews === 0 && this.rank(c.level) <= r);
+  },
+  // Auto-advance one level if the current one is sufficiently learned.
+  // Returns the newly-unlocked level, or null.
+  maybeAutoLevelUp() {
+    if (!this.isCurrentComplete()) return null;
+    const nx = this.next();
+    if (nx) { this.set(nx); return nx; }
+    return null;
+  },
+};
 
 /* ---------------------------------------------------------
    5. Audio — speechSynthesis, per-language voice
@@ -310,7 +360,7 @@ const Review = {
     due.sort((a, b) => new Date(a.nextReviewDate) - new Date(b.nextReviewDate));
     const introducedToday = Store.state.log.filter(l => l.date === todayKey() && l.isNew).length;
     const budget = Math.max(0, (Store.settings.newPerDay || 0) - introducedToday);
-    const fresh = Store.cards.filter(c => c.reviews === 0).slice(0, budget);
+    const fresh = Levels.unlockedNew().slice(0, budget);   // only unlocked levels
     this.queue = [...due, ...fresh];
   },
   start() { this.buildQueue(); this.next(); },
@@ -482,38 +532,57 @@ const Review = {
     Store.state.history[k] = (Store.state.history[k] || 0) + 1;
     Store.state.log.push({ date: k, correct: rating >= RATING.GOOD, isNew: wasNew });
     Store.save();
+    const leveled = Levels.maybeAutoLevelUp();   // auto-unlock next level if earned
     this.next();
-    if (wasLearn) Toast.show("Learned ✓ — you'll be quizzed next time");
+    if (leveled) Toast.show(`🎉 Level up! ${leveled} words unlocked`);
+    else if (wasLearn) Toast.show("Learned ✓ — you'll be quizzed next time");
     else Toast.flashInterval(fmtInterval(c.interval), rating);
   },
-  // Manual "study more" — pull in remaining new cards even past the daily
-  // cap (the user explicitly asked), plus anything now due. Gives feedback
-  // instead of silently no-op'ing when there's genuinely nothing left.
+  // Manual "study more" — pull in remaining new cards (within unlocked levels)
+  // even past the daily cap, plus anything now due. Feedback if nothing's left.
   studyMore() {
     const now = new Date();
     const due = Store.cards.filter(c => c.reviews > 0 && SRS.isDue(c, now))
       .sort((a, b) => new Date(a.nextReviewDate) - new Date(b.nextReviewDate));
-    const fresh = Store.cards.filter(c => c.reviews === 0);
-    this.queue = [...due, ...fresh];
+    this.queue = [...due, ...Levels.unlockedNew()];
     if (!this.queue.length) { Toast.show("All caught up — nothing left to study right now"); return; }
     this.next();
+  },
+  // The done-screen button: study remaining new, or unlock/jump to next level.
+  doneAction() {
+    if (Levels.unlockedNew().length === 0 && Levels.next()) {
+      const nx = Levels.next();
+      Levels.set(nx);
+      Toast.show(`${nx} unlocked — new words added 🎉`);
+    }
+    this.studyMore();
   },
   renderDone() {
     document.getElementById("cardStage").classList.add("hidden");
     document.getElementById("sessionDone").classList.remove("hidden");
     const now = new Date();
-    const remainingNew = Store.cards.filter(c => c.reviews === 0).length;
+    const remainingNew = Levels.unlockedNew().length;
     const dueLater = Store.cards.filter(c => c.reviews > 0 && !SRS.isDue(c, now)).length;
     const btn = document.getElementById("studyAgainBtn");
     const sub = document.getElementById("doneSub");
+    const cur = Levels.current(), nx = Levels.next(), prog = Levels.progress();
     if (remainingNew > 0) {
       btn.classList.remove("hidden");
       btn.textContent = `Study ${remainingNew} more new word${remainingNew === 1 ? "" : "s"} →`;
-      sub.textContent = `Nice work! ${remainingNew} new word${remainingNew === 1 ? "" : "s"} still waiting whenever you're ready.`;
+      sub.textContent = `Nice work! ${remainingNew} more ${cur} word${remainingNew === 1 ? "" : "s"} ready whenever you are.`;
+    } else if (nx) {
+      btn.classList.remove("hidden");
+      if (Levels.isCurrentComplete()) {
+        btn.textContent = `🎉 Unlock ${nx} →`;
+        sub.textContent = `You've learned your ${cur} words — time for ${nx}!`;
+      } else {
+        btn.textContent = `Jump ahead to ${nx} →`;
+        sub.textContent = `You've met every ${cur} word (${prog.learned}/${prog.total} learned). Keep reviewing to master them — or jump ahead to ${nx}.`;
+      }
     } else {
       btn.classList.add("hidden");
       sub.textContent = dueLater
-        ? "You've learned every word in this deck. Come back later as they're due for review."
+        ? `You've reached the top level (${cur}) and learned every word. Come back as reviews come due.`
         : "You're all caught up. 🎉 Come back later or add your own words with + Add.";
     }
   },
@@ -601,7 +670,26 @@ const Stats = {
     document.getElementById("breakdownBar").innerHTML = ["new","learning","review","mastered"].map(s =>
       `<div class="bd-${s}" style="width:${100*counts[s]/total}%" title="${cap(s)}: ${counts[s]}"></div>`
     ).join("");
+    this.renderLevel();
     this.renderHeatmap();
+  },
+  renderLevel() {
+    const el = document.getElementById("levelPanel");
+    if (!el) return;
+    const cur = Levels.current(), nx = Levels.next(), p = Levels.progress();
+    const pct = Math.round(p.pct * 100);
+    const need = Math.max(0, Math.ceil(LEVEL_THRESHOLD * p.total) - p.learned);
+    let msg;
+    if (!nx) msg = `You're at the top level available in this deck (<b>${cur}</b>).`;
+    else if (p.pct >= LEVEL_THRESHOLD) msg = `You're ready for <b>${nx}</b> — it unlocks automatically, or switch now in Settings.`;
+    else msg = `Learn ${need} more <b>${cur}</b> word${need === 1 ? "" : "s"} to unlock <b>${nx}</b>.`;
+    el.innerHTML = `
+      <div class="level-row">
+        <span class="level-now">${cur}</span>
+        <div class="level-bar"><div style="width:${pct}%"></div></div>
+        <span class="level-frac">${p.learned}/${p.total} learned</span>
+      </div>
+      <p class="muted">${msg}</p>`;
   },
   streak() {
     const hist = Store.state.history;
@@ -636,6 +724,9 @@ const Settings = {
     $("autoPlay").addEventListener("change", e => { Store.settings.autoPlay = e.target.checked; Store.save(); });
     $("clozeMode").addEventListener("change", e => { Store.settings.cloze = e.target.checked; Store.save(); });
     $("newPerDay").addEventListener("change", e => { Store.settings.newPerDay = clampInt(e.target.value, 0, 100); Store.save(); });
+    $("levelSelect").addEventListener("change", e => {
+      Levels.set(e.target.value); App.refreshAll(); Toast.show(`Level set to ${e.target.value}`);
+    });
     $("voiceSelect").addEventListener("change", e => { Store.settings.voiceURI = e.target.value; Store.save(); });
     $("testVoice").addEventListener("click", () => Audio.speak(Lang.pack().ui.testPhrase));
     $("exportBtn").addEventListener("click", () => Data.export());
@@ -650,6 +741,14 @@ const Settings = {
     document.getElementById("autoPlay").checked = s.autoPlay;
     document.getElementById("clozeMode").checked = s.cloze;
     document.getElementById("newPerDay").value = s.newPerDay;
+    this.populateLevel();
+  },
+  populateLevel() {
+    const sel = document.getElementById("levelSelect");
+    if (!sel) return;
+    sel.innerHTML = Levels.present().map(l =>
+      `<option value="${l}" ${l === Levels.current() ? "selected" : ""}>${l}</option>`
+    ).join("");
   },
   populateVoices() {
     const sel = document.getElementById("voiceSelect");
@@ -902,7 +1001,7 @@ const App = {
     document.getElementById("deckSearch").addEventListener("input", () => DeckManager.render());
     document.getElementById("filterLevel").addEventListener("change", () => DeckManager.render());
     document.getElementById("filterState").addEventListener("change", () => DeckManager.render());
-    document.getElementById("studyAgainBtn").addEventListener("click", () => Review.studyMore());
+    document.getElementById("studyAgainBtn").addEventListener("click", () => Review.doneAction());
     // Delegated on the persistent card stage: word-mining + example cycling.
     document.getElementById("cardStage").addEventListener("click", e => {
       const mine = e.target.closest(".mine");
@@ -957,6 +1056,8 @@ const App = {
     document.getElementById("cntNew").textContent = cards.filter(c => c.reviews === 0).length;
     document.getElementById("cntLearning").textContent = cards.filter(c => SRS.stage(c) === "learning").length;
     document.getElementById("cntDue").textContent = cards.filter(c => c.reviews > 0 && SRS.isDue(c, now)).length;
+    const pill = document.getElementById("levelPill");
+    if (pill) { const p = Levels.progress(); pill.innerHTML = `Lv ${Levels.current()} <span>${p.learned}/${p.total}</span>`; }
   },
   refreshAll() {
     Settings.populateVoices();

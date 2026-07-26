@@ -38,6 +38,7 @@
     <!-- ===================== REVIEW VIEW ===================== -->
     <section id="view-review" class="view is-active">
       <div class="review-stats">
+        <div class="pill pill-level" id="levelPill" title="Your level — new words come from here and below">Lv A1 <span>0/0</span></div>
         <div class="pill pill-new"><span id="cntNew">0</span> New</div>
         <div class="pill pill-learning"><span id="cntLearning">0</span> Learning</div>
         <div class="pill pill-review"><span id="cntDue">0</span> Due</div>
@@ -112,6 +113,11 @@
       </div>
 
       <div class="glass panel">
+        <h3>Level</h3>
+        <div id="levelPanel"></div>
+      </div>
+
+      <div class="glass panel">
         <h3>Memory breakdown</h3>
         <div class="breakdown-bar" id="breakdownBar"></div>
         <div class="breakdown-legend">
@@ -150,6 +156,10 @@
 
       <div class="glass panel">
         <h3>Study</h3>
+        <label class="row-setting">
+          <span>Your level <small style="color:var(--muted)">— new words come from this level and below; the next unlocks automatically</small></span>
+          <select id="levelSelect" class="input input-sm"></select>
+        </label>
         <label class="row-setting">
           <span>Cloze deletion mode (hide word in sentence)</span>
           <input type="checkbox" id="clozeMode" checked />
@@ -278,6 +288,13 @@
         <p>New words appear as a <b>learn</b> card first: you see the word, hear
            it, and read what it means. Nothing to get wrong. You'll be quizzed on
            it in a later session.</p>
+      </section>
+      <section>
+        <h3>Levels</h3>
+        <p>You start at <b>A1</b> (beginner). New words come only from your
+           current level, so you're never shown words above your level too soon.
+           Learn most of a level and the next unlocks automatically — or change
+           your level anytime in <b>Settings</b>.</p>
       </section>
       <section>
         <h3>Rating a word you're quizzed on</h3>

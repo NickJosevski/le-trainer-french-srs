@@ -18,6 +18,14 @@ step — just open `index.html`.
   quizzed, so you're never guessing at a word you've never met. Rating buttons
   carry plain-language hints ("no idea / tough / got it / too easy") and a **?**
   help panel explains the loop, shortcuts, and jargon (cloze, IPA, CEFR).
+- **Levels (CEFR progression)** — you start at **A1** and only ever meet words
+  at your level; learn ~80% of a level and the next (**A2 → B1 → …**) unlocks
+  automatically with a "Level up!" moment. Change level manually anytime in
+  Settings. A level pill and a Stats progress bar show how close the next
+  unlock is.
+- **Dictionary form → in-context form** — when a sentence conjugates or
+  pluralises the word (e.g. *habiter → habite*), the card shows both, so the
+  link between the headword and the form you're reading is explicit.
 - **SM-2 spaced repetition** — Again / Hard / Good / Easy ratings with live
   next-interval previews; cards flow through New → Learning → Review → Mastered.
 - **Grammar-aware cards** — article + gender tag (`le` / `la` / `il` / `la`,
