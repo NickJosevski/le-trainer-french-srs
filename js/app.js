@@ -278,6 +278,17 @@ function sentenceHintSuffix(canMine) {
   return canMine ? ` — tap a word to add it` : "";
 }
 
+// When the sentence uses a different form from the headword (a conjugated verb,
+// a plural, etc.), show the dictionary form → form-used-here mapping.
+function formLine(c, sentenceStr) {
+  if (!c.word) return "";
+  const hit = window.LeTrainer.match.locateTarget({ word: c.word, inflection: c.inflection, sentence: sentenceStr }, Lang.pack());
+  if (!hit) return "";
+  const surface = sentenceStr.slice(hit.start, hit.end);
+  if (surface.toLowerCase() === c.word.toLowerCase()) return "";   // same form — nothing to explain
+  return `<div class="form-line"><b>${escapeHtml(c.word)}</b> → <span class="form-here">${escapeHtml(surface)}</span> <span class="form-note">form used here</span></div>`;
+}
+
 /* ---------------------------------------------------------
    7. Review controller
    --------------------------------------------------------- */
@@ -345,6 +356,7 @@ const Review = {
         <span class="lbl">Example${sentenceHintSuffix(canMine)}</span>
         <div class="fr-line">${renderSentenceTokens(ex.sentence, c, true)}</div>
         ${ex.translation ? `<div class="en-line">${escapeHtml(ex.translation)}</div>` : ""}
+        ${formLine(c, ex.sentence)}
         ${more}
       </div>`;
   },
